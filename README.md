@@ -73,8 +73,9 @@ plt.plot(x_new, y_mean)
 ```
 
 `gp` is a `GPy.core.GP` object. Please refer the usage of [GPy](https://nbviewer.jupyter.org/github/SheffieldML/notebook/blob/master/GPy/basic_gp.ipynb).
-
 You can start with, e.g., `gp.plot()`.
+
+You might want to set a more reasonable initial guess for `k_sigma2, k_length, w_sigma2`.
 
 More detailed user guide and notebook example will be added later.
 
