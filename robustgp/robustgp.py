@@ -123,7 +123,7 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.95,
             callback(gp, consistency, iter_num, *callback_args)
 
     if debug:
-        n2 = iter_num - n1
+        n2 = iter_num - n1 - n0
         print(f'{n0+n1+n2}:\t{n0},\t{n1},\t{n2}')
 
     # outlier detection
