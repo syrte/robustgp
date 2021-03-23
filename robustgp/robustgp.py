@@ -59,8 +59,9 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.95,
     mean, var = gp.predict(X)
     dist = (Y - mean)**2 / var
 
+    iter_num = 0
     if callback is not None:
-        callback(gp, consistency, 0, *callback_args)
+        callback(gp, consistency, iter_num, *callback_args)
 
     ix_old = None
     niter1 = niter0 + niter1
@@ -91,11 +92,13 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.95,
         mean, var = gp.predict(X)
         dist = (Y - mean)**2 / var
 
+        iter_num += 1
         if callback is not None:
-            callback(gp, consistency, i + 1, *callback_args)
+            callback(gp, consistency, iter_num, *callback_args)
 
-    n0 = niter0
-    n1 = i + 1 - niter0 if niter1 else 0
+    if debug:
+        n0 = niter0 + 1
+        n1 = iter_num - n0
 
     # reweighting step
     for i in range(niter1, niter1 + niter2):
@@ -115,14 +118,15 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.95,
         mean, var = gp.predict(X)
         dist = (Y - mean)**2 / var
 
+        iter_num += 1
         if callback is not None:
-            callback(gp, consistency, i + 1, *callback_args)
+            callback(gp, consistency, iter_num, *callback_args)
 
-    n2 = i + 1 - niter1
-    print(f'{n0+n1+n2}:\t{n0},\t{n1},\t{n2}')
+    if debug:
+        n2 = iter_num - n1
+        print(f'{n0+n1+n2}:\t{n0},\t{n1},\t{n2}')
 
     # outlier detection
     score = (dist / consistency)**0.5
-
 
     return gp, consistency, score
