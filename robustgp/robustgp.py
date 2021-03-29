@@ -350,7 +350,7 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
             h = int(min(np.ceil(n * alpha - 0.5), n - 1))  # alpha <=(h+0.5)/n
 
             # XXX: might be buggy when there are identical data points
-            # better to use argpartition!
+            # better to use argpartition! but may break ix_sub == ix_old.
             ix_sub = (d_sq <= np.partition(d_sq, h)[h])  # alpha-quantile
             consistency = alpha / chi2(p + 2).cdf(chi_sq)
 
@@ -374,6 +374,7 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
         alpha = alpha2
         chi_sq = chi2(p).ppf(alpha)
 
+        # XXX: might be buggy when there are identical data points
         ix_sub = (d_sq <= chi_sq * consistency)
         consistency = alpha / chi2(p + 2).cdf(chi_sq)
 
