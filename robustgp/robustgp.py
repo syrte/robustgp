@@ -1,6 +1,7 @@
 import GPy
 import numpy as np
 from scipy.stats import chi2
+from collections import namedtuple
 
 __all__ = ['ITGP']
 
@@ -130,3 +131,131 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.95,
     score = (dist / consistency)**0.5
 
     return gp, consistency, score
+
+
+def ITGPv2(X, Y, alpha1=0.50, alpha2=0.95, nshrink=5, maxiter=20, reweight=1,
+           callback=None, callback_args=(), optimize_kwargs={}, **kwargs):
+    """
+    Robust Gaussian Process Regression Based on Iterative Trimming.
+
+    Parameters
+    ----------
+    X: array shape (n, p)
+    Y: array shape (n, 1)
+        Input data.
+    alpha1, alpha2:
+        Coverage fraction used in contraction step and reweighting step respectively.
+    nshrink:
+        Number of shrinking iteration.
+    maxiter, reweight:
+        Maximum iteration allowed in contraction step and reweighting step respectively.
+    callback: callable
+        Function for monitoring the iteration process. It takes
+        the iteration number i and the locals() dict as input
+        e.g.
+            callback=lambda i, locals: print(i, locals['gp'].num_data, locals['gp'].param_array)
+        or
+            callback=lambda i, locals: locals['gp'].plot()
+    callback_args:
+        Extra parameters for callback.
+    optimize_kwargs:
+        GPy.core.GP.optimize parameters.
+    **kwargs:
+        GPy.core.GP parameters.
+
+    Returns
+    -------
+    ITGPResult object, including gp, consistency, score, Y_avg, Y_var, ix_sub, iter_num
+        gp:
+            GPy.core.GP object.
+        consistency:
+            Consistency factor.
+        score:
+            Scaled residuals.
+        Y_avg, Y_var:
+            Expectation and variance of input data.
+        ix_sub:
+            Boolean index for trimming sample.
+        iter_num:
+            Total iterations performed.
+    """
+    n, p = Y.shape
+    if p != 1:
+        raise ValueError("Y is expected in shape (n, 1).")
+    if n * alpha1 - 0.5 < 2:
+        raise ValueError("The data set is unreasonably small!")
+    if nshrink < 1:
+        raise ValueError("nshrink >= 1 is expected.")
+    if maxiter < nshrink:
+        raise ValueError("maxiter >= nshrink is expected.")
+
+    kwargs.setdefault('likelihood', GPy.likelihoods.Gaussian(variance=1.0))
+    kwargs.setdefault('kernel', GPy.kern.RBF(X.shape[1]))
+    kwargs.setdefault('name', 'ITGP regression')
+
+    # initialization
+    d_sq = None
+    ix_old = None
+    iter_num = 0
+
+    # contraction step
+    for i in range(maxiter):
+        if i == 0:
+            # starting with the full sample
+            ix_sub = slice(None)
+            consistency = 1.0
+        else:
+            # reducing alpha from 1 to alpha1 gradually
+            if i < nshrink:
+                alpha = alpha1 + (1 - alpha1) * (1 - i / nshrink)
+            else:
+                alpha = alpha1
+            chi_sq = chi2(p).ppf(alpha)
+            h = int(max(np.floor(n * alpha - 0.5), 0))  # (h+0.5)/n <= alpha
+            # h = int(np.ceil(n * alpha - 0.5))  # (h+0.5)/n <= alpha
+
+            ix_sub = (d_sq <= np.partition(d_sq, h)[h])  # alpha-quantile
+            consistency = alpha / chi2(p + 2).cdf(chi_sq)
+
+        # check the convergence after the first nshrink step
+        if (i > nshrink) and (ix_sub == ix_old).all():
+            break  # converged
+        ix_old = ix_sub
+
+        gp = GPy.core.GP(X[ix_sub], Y[ix_sub], **kwargs)
+        gp.optimize(**optimize_kwargs)
+        Y_avg, Y_var = gp.predict(X, include_likelihood=True)
+        d_sq = ((Y - Y_avg)**2 / Y_var).ravel()
+
+        if callback is not None:
+            callback(iter_num, locals(), *callback_args)
+            iter_num += 1
+
+    # reweighting step
+    for i in range(reweight):
+        alpha = alpha2
+        chi_sq = chi2(p).ppf(alpha)
+
+        ix_sub = (d_sq <= chi_sq * consistency)
+        consistency = alpha / chi2(p + 2).cdf(chi_sq)
+
+        if (ix_sub == ix_old).all():
+            break  # converged
+        ix_old = ix_sub
+
+        gp = GPy.core.GP(X[ix_sub], Y[ix_sub], **kwargs)
+        gp.optimize(**optimize_kwargs)
+        Y_avg, Y_var = gp.predict(X, include_likelihood=True)
+        d_sq = ((Y - Y_avg)**2 / Y_var).ravel()
+
+        if callback is not None:
+            callback(iter_num, locals(), *callback_args)
+            iter_num += 1
+
+    # outlier detection
+    score = (d_sq / consistency)**0.5
+
+    return ITGPResult(gp, consistency, score, Y_avg, Y_var, ix_sub, iter_num)
+
+
+ITGPResult = namedtuple('ITGPResult', ('gp', 'consistency', 'score', 'Y_avg', 'Y_var', 'ix_sub', 'iter_num'))
