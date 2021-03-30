@@ -263,7 +263,7 @@ ITGPResult = namedtuple('ITGPResult', ('gp', 'consistency', 'score', 'Y_avg', 'Y
 
 def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
            maxiter=None, predict=True, callback=None, callback_args=(),
-           optimize_kwargs={}, **gp_kwargs):
+           warm_start=True, optimize_kwargs={}, **gp_kwargs):
     """
     Robust Gaussian Process Regression Based on Iterative Trimming.
 
@@ -289,6 +289,9 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
             callback=lambda i, locals: locals['gp'].plot()
     callback_args:
         Extra parameters for callback.
+    warm_start: bool, int
+        From which step, it uses the warm start for optimizing hyper parameters.
+        Not implemented yet.
     optimize_kwargs:
         GPy.core.GP.optimize parameters.
     **gp_kwargs:
@@ -324,6 +327,8 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
         # make no sense to set maxiter > 1 when nshrink == 0
     elif maxiter <= nshrink:
         raise ValueError("maxiter > nshrink is expected.")
+    if warm_start != 1:
+        raise NotImplementedError("Not implemented yet.")
 
     gp_kwargs.setdefault('likelihood', GPy.likelihoods.Gaussian(variance=1.0))
     gp_kwargs.setdefault('kernel', GPy.kern.RBF(X.shape[1]))
