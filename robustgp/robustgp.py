@@ -292,7 +292,7 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
     warm_start: bool, int
         From which step, it uses the warm start for optimizing hyper-parameters.
             0: Disable warm start.
-            1: (default) warm starts for all steps.
+            1: (default) warm starts for all steps. (Note i=1 is the first step after initialization.)
           > 1: use hyper-parameters trained from last iteration for steps >= warm_start,
                otherwise use a fresh initial start.
         Warm start might help converging faster with risk of being trapped at local solution.
@@ -336,6 +336,7 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
     gp_kwargs.setdefault('kernel', GPy.kern.RBF(X.shape[1]))
     gp_kwargs.setdefault('name', 'ITGP regression')
 
+    # use copies so that input likelihood and kernel will not be changed
     likelihood_cold = gp_kwargs['likelihood'].copy()
     kernel_cold = gp_kwargs['kernel'].copy()
 
@@ -369,10 +370,9 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
             break  # converged
         ix_old = ix_sub
 
-        if i > 0:
-            if 0 == warm_start or i < warm_start:
-                gp_kwargs['likelihood'] = likelihood_cold
-                gp_kwargs['kernel'] = kernel_cold
+        if 0 == warm_start or iter_num < warm_start:
+            gp_kwargs['likelihood'] = likelihood_cold.copy()
+            gp_kwargs['kernel'] = kernel_cold.copy()
 
         gp = GPy.core.GP(X[ix_sub], Y[ix_sub], **gp_kwargs)
         gp.optimize(**optimize_kwargs)
@@ -382,7 +382,7 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
 
         if callback is not None:
             callback(iter_num, locals(), *callback_args)
-            iter_num += 1
+        iter_num += 1
 
     # reweighting step
     for i in range(reweight):
@@ -397,6 +397,10 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
             break  # converged
         ix_old = ix_sub
 
+        if 0 == warm_start or iter_num < warm_start:
+            gp_kwargs['likelihood'] = likelihood_cold.copy()
+            gp_kwargs['kernel'] = kernel_cold.copy()
+
         gp = GPy.core.GP(X[ix_sub], Y[ix_sub], **gp_kwargs)
         gp.optimize(**optimize_kwargs)
 
@@ -408,7 +412,7 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
 
         if callback is not None:
             callback(iter_num, locals(), *callback_args)
-            iter_num += 1
+        iter_num += 1
 
     if predict:
         # outlier detection
