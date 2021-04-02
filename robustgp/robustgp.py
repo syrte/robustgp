@@ -290,8 +290,12 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
     callback_args:
         Extra parameters for callback.
     warm_start: bool, int
-        From which step, it uses the warm start for optimizing hyper parameters.
-        Not implemented yet.
+        From which step, it uses the warm start for optimizing hyper-parameters.
+            0: Disable warm start.
+            1: (default) warm starts for all steps.
+          > 1: use hyper-parameters trained from last iteration for steps >= warm_start,
+               otherwise use a fresh initial start.
+        Warm start might help converging faster with risk of being trapped at local solution.
     optimize_kwargs:
         GPy.core.GP.optimize parameters.
     **gp_kwargs:
@@ -327,12 +331,13 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
         # make no sense to set maxiter > 1 when nshrink == 0
     elif maxiter <= nshrink:
         raise ValueError("maxiter > nshrink is expected.")
-    if warm_start != 1:
-        raise NotImplementedError("Not implemented yet.")
 
     gp_kwargs.setdefault('likelihood', GPy.likelihoods.Gaussian(variance=1.0))
     gp_kwargs.setdefault('kernel', GPy.kern.RBF(X.shape[1]))
     gp_kwargs.setdefault('name', 'ITGP regression')
+
+    likelihood_cold = gp_kwargs['likelihood'].copy()
+    kernel_cold = gp_kwargs['kernel'].copy()
 
     # temp vars declaration
     d_sq = None
@@ -363,6 +368,11 @@ def ITGPv3(X, Y, alpha1=0.50, alpha2=0.975, nshrink=5, reweight=True,
         if (i > nshrink) and (ix_sub == ix_old).all():
             break  # converged
         ix_old = ix_sub
+
+        if i > 0:
+            if 0 == warm_start or i < warm_start:
+                gp_kwargs['likelihood'] = likelihood_cold
+                gp_kwargs['kernel'] = kernel_cold
 
         gp = GPy.core.GP(X[ix_sub], Y[ix_sub], **gp_kwargs)
         gp.optimize(**optimize_kwargs)
