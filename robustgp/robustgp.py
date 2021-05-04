@@ -77,13 +77,19 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
             Scaled residuals. None if return_predict=False.
     """
     # check parameters
+    if X.ndim == 1:
+        X = np.atleast_2d(X).T
     if Y.ndim == 1:
         Y = np.atleast_2d(Y).T
+    if len(X) != len(Y):
+        raise ValueError("X should have the same length as Y")
+
     n, p = Y.shape
     if p != 1:
         raise ValueError("Y is expected in shape (n, 1).")
     if n * alpha1 - 0.5 <= 2:
-        raise ValueError("The dataset is unreasonably small.")
+        raise ValueError("The dataset is unreasonably small!")
+
     if nsh < 0 or ncc < 0 or nrw < 0:
         raise ValueError("nsh, ncc and nrw are expected to be nonnegative numbers.")
 
