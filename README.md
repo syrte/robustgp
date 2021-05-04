@@ -17,7 +17,7 @@ Dependency:
 
 ## Quick start
 
-One can start with examples in [this notebook](https://github.com/syrte/robustgp/blob/master/notebook/Example_Neal_Dataset.ipynb).
+One can start with examples in [this notebook](https://nbviewer.jupyter.org/github/syrte/robustgp/blob/master/notebook/Example_Neal_Dataset.ipynb).
 
 
 ## Usage
