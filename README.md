@@ -11,8 +11,7 @@ The Gaussian process (GP) regression can be severely biased when the data are co
 pip install robustgp
 ```
 
-Dependency:
-  - [GPy](https://github.com/SheffieldML/GPy/)
+Dependency: [GPy](https://github.com/SheffieldML/GPy/)
 
 
 ## Quick start
