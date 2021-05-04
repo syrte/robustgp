@@ -1,45 +1,23 @@
 # robustgp
 
-Robust Gaussian Process Regression Based on Iterative Trimming
+[Robust Gaussian Process Regression Based on Iterative Trimming (ITGP)](https://arxiv.org/abs/2011.11057)
 
-Zhao-Zhou Li, Lu Li, Zhengyi Shao, 2020, https://arxiv.org/abs/2011.11057
+The Gaussian process (GP) regression can be severely biased when the data are contaminated by outliers. ITGP is a new robust GP regression algorithm that iteratively trims the most extreme data points. While the new algorithm retains the attractive properties of the standard GP as a nonparametric and flexible regression method, it can greatly improve the model accuracy for contaminated data even in the presence of extreme or abundant outliers. It is also easier to implement compared with previous robust GP variants that rely on approximate inference. Applied to a wide range of experiments with different contamination levels, the proposed method significantly outperforms the standard GP and the popular robust GP variant with the Student-t likelihood in most test cases. In addition, as a practical example in the astrophysical study, we show that this method can precisely determine the main-sequence ridge line in the color-magnitude diagram of star clusters.
 
-First application
-- Modeling Unresolved Binaries of Open Clusters in the Color-Magnitude Diagram. I. Method and Application of NGC 3532
-  https://ui.adsabs.harvard.edu/abs/2020ApJ...901...49L/
 
 ## Quick start
-You can start with examples in [this notebook](https://github.com/syrte/robustgp/blob/master/notebook/Example_Neal_Dataset.ipynb).
 
-## Dependency
-[GPy](https://github.com/SheffieldML/GPy/)
+One can start with examples in [this notebook](https://github.com/syrte/robustgp/blob/master/notebook/Example_Neal_Dataset.ipynb).
+
 
 ## Install
 
-Install the dependency first
 ```
-pip install GPy
-```
-
-Assuming you want to put the code at certain directory, say `~/pythonlib`
-```bash
-cd ~/pythonlib
-wget https://raw.githubusercontent.com/syrte/robustgp/master/robustgp/robustgp.py
+pip install robustgp
 ```
 
-Then you can import `ITGP` as following,
-```python
-import sys
-sys.path.append('~/pythonlib')
-from robustgp import ITGP
-```
-
-Or add this in your `.bashrc` once for all
-```bash
-export PYTHONPATH="$HOME/pythonlib:$PYTHONPATH"
-```
-
-I will write a `setup.py` in the future for easier installation.
+- Dependency
+  [GPy](https://github.com/SheffieldML/GPy/)
 
 
 ## Usage
@@ -59,5 +37,18 @@ See [this notebook](https://github.com/syrte/robustgp/blob/master/notebook/Examp
 
 Here `gp` is a `GPy.core.GP` object, whose usage is illustrated [here](https://nbviewer.jupyter.org/github/SheffieldML/notebook/blob/master/GPy/basic_gp.ipynb).
 
-## License 
+
+
+## References
+
+- Algorithm paper:
+  [Robust Gaussian Process Regression Based on Iterative Trimming](https://arxiv.org/abs/2011.11057)
+  Zhao-Zhou Li, Lu Li, Zhengyi Shao, 2020
+
+- First application:
+  [Modeling Unresolved Binaries of Open Clusters in the Color-Magnitude Diagram. I. Method and Application of NGC 3532](https://ui.adsabs.harvard.edu/abs/2020ApJ...901...49L/)
+  Li et al., 2020
+
+## License
+
 The MIT License
