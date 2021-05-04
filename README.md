@@ -7,6 +7,9 @@ First application
 - Modeling Unresolved Binaries of Open Clusters in the Color-Magnitude Diagram. I. Method and Application of NGC 3532
   https://ui.adsabs.harvard.edu/abs/2020ApJ...901...49L/
 
+## Quick start
+See [this notebook](https://github.com/syrte/robustgp/blob/master/notebook/Example_Neal_Dataset.ipynb) for a complete example.
+
 ## Dependency
 [GPy](https://github.com/SheffieldML/GPy/)
 
