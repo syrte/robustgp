@@ -76,7 +76,9 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
         score:
             Scaled residuals. None if return_predict=False.
     """
-    # checking
+    # check parameters
+    if Y.ndim == 1:
+        Y = np.atleast_2d(Y).T
     n, p = Y.shape
     if p != 1:
         raise ValueError("Y is expected in shape (n, 1).")
