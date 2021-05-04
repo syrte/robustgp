@@ -31,7 +31,7 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
 
     Parameters
     ----------
-    X: array shape (n, p)
+    X: array shape (n, d)
     Y: array shape (n, 1)
         Input data with shape (# of data, # of dims).
     alpha1, alpha2: float in (0, 1)
