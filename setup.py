@@ -5,7 +5,7 @@ with open('README.md', 'r') as fp:
 
 setup(
     name='robustgp',
-    version='2.0',
+    version='2.1',
     description='Robust Gaussian process regression based on iterative trimming.',
     long_description=long_description,
     long_description_content_type='text/markdown',
