@@ -10,7 +10,7 @@ May 04 2021
 Updated for revised manuscript, with changes in API and default parameters
 
 Aug 11 2020
-Initial commission.
+Initial commit.
 """
 
 import GPy
@@ -21,9 +21,6 @@ from collections import namedtuple
 __all__ = ['ITGP']
 __version__ = 2.0
 __author__ = "Zhaozhou Li"
-
-
-ITGPResult = namedtuple('ITGPResult', ('gp', 'consistency', 'score', 'Y_avg', 'Y_var', 'ix_sub', 'niter'))
 
 
 def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
@@ -65,19 +62,19 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
 
     Returns
     -------
-    ITGPResult object: named tuple
+    ITGPResult: named tuple object
         gp:
             GPy.core.GP object.
         consistency:
             Consistency factor.
-        score:
-            Scaled residuals.
-        Y_avg, Y_var:
-            Expectation and variance of input data.
         ix_sub:
             Boolean index for trimming sample.
         niter:
-            Total iterations performed.
+            Total iterations performed, <= 1 + nsh + ncc + nrw.
+        Y_avg, Y_var:
+            Expectation and variance of input data points. None if return_predict=False.
+        score:
+            Scaled residuals. None if return_predict=False.
     """
     # checking
     n, p = Y.shape
@@ -180,9 +177,9 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
     if return_predict:
         # outlier detection
         score = (d_sq / consistency)**0.5
-        return ITGPResult(gp, consistency, score, Y_avg, Y_var, ix_sub, niter)
+        return ITGPResult(gp, consistency, ix_sub, niter, Y_avg, Y_var, score)
     else:
-        return ITGPResult(gp, consistency, None, None, None, ix_sub, niter)
+        return ITGPResult(gp, consistency, ix_sub, niter, None, None, None)
 
 
-ITGPResult = namedtuple('ITGPResult', ('gp', 'consistency', 'score', 'Y_avg', 'Y_var', 'ix_sub', 'niter'))
+ITGPResult = namedtuple('ITGPResult', ('gp', 'consistency', 'ix_sub', 'niter', 'Y_avg', 'Y_var', 'score'))
