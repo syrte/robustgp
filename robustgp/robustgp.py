@@ -19,8 +19,6 @@ from scipy.stats import chi2
 from collections import namedtuple
 
 __all__ = ['ITGP']
-__version__ = 2.0
-__author__ = "Zhaozhou Li"
 
 
 def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
