@@ -7,7 +7,7 @@ https://arxiv.org/abs/2011.11057
 Change logs
 -----------
 May 04 2021
-Updated for revised manuscript, with API changes
+Updated for revised manuscript, with changes in API and default parameters
 
 Aug 11 2020
 Initial commission.
@@ -27,8 +27,8 @@ ITGPResult = namedtuple('ITGPResult', ('gp', 'consistency', 'score', 'Y_avg', 'Y
 
 
 def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
-         maxiter=None, predict=True, callback=None, callback_args=(),
-         warm_start=True, optimize_kwargs={}, **gp_kwargs):
+         maxiter=None, return_predict=True, callback=None, callback_args=(),
+         warm_start=False, optimize_kwargs={}, **gp_kwargs):
     """
     Robust Gaussian Process Regression Based on Iterative Trimming.
 
@@ -38,10 +38,10 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
     Y: array shape (n, 1)
         Input data with shape (# of data, # of dims).
     alpha1, alpha2: float in (0, 1)
-        Coverage fraction used in shrinking and reweighting step respectively.
+        Trimming and reweighting parameters respectively.
     nsh, ncc, nrw: int (>=0)
         Number of shrinking, concentrating, and reweighting iterations respectively.
-    predict: bool
+    return_predict: bool
         If True, then the predicted mean, variance, and score of input data will be returned.
     callback: callable
         Function for monitoring the iteration process. It takes
@@ -53,12 +53,10 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
     callback_args:
         Extra parameters for callback.
     warm_start: bool, int
-        From which step, it uses the warm start for optimizing hyper-parameters.
-            0: Disable warm start.
-            1: (default) warm starts for all steps. (Note i=1 is the first step after initialization.)
-          > 1: use hyper-parameters trained from last iteration for steps >= warm_start,
-               otherwise use a fresh initial start.
-        Warm start might help converging faster with risk of being trapped at local solution.
+        From which step it uses the warm start for optimizing hyper-parameters.
+            0: (default) disable warm start, always use a fresh initial guess (provided by input gp object).
+          >=1: start optimization with hyper-parameters trained from last iteration for steps >= warm_start,
+        A warm start might help converge faster with the risk of being trapped at a local solution.
     optimize_kwargs:
         GPy.core.GP.optimize parameters.
     **gp_kwargs:
@@ -67,7 +65,7 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
 
     Returns
     -------
-    ITGPResult object, including gp, consistency, score, Y_avg, Y_var, ix_sub, niter.
+    ITGPResult object: named tuple
         gp:
             GPy.core.GP object.
         consistency:
@@ -88,22 +86,22 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
     if n * alpha1 - 0.5 <= 2:
         raise ValueError("The dataset is unreasonably small.")
     if nsh < 0 or ncc < 0 or nrw < 0:
-        raise ValueError("nshrink >= 0 and reweight >= 0 are expected.")
+        raise ValueError("nsh, ncc and nrw are expected to be nonnegative numbers.")
 
     gp_kwargs.setdefault('likelihood', GPy.likelihoods.Gaussian(variance=1.0))
     gp_kwargs.setdefault('kernel', GPy.kern.RBF(X.shape[1]))
     gp_kwargs.setdefault('name', 'ITGP regression')
 
     # use copies so that input likelihood and kernel will not be changed
-    likelihood_cold = gp_kwargs['likelihood'].copy()
-    kernel_cold = gp_kwargs['kernel'].copy()
+    likelihood_init = gp_kwargs['likelihood'].copy()
+    kernel_init = gp_kwargs['kernel'].copy()
 
     # temp vars declaration
     d_sq = None
     ix_old = None
     niter = 0
 
-    # contraction step
+    # shrinking and concentrating
     for i in range(1 + nsh + ncc):
         if i == 0:
             # starting with the full sample
@@ -112,29 +110,32 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
         else:
             # reducing alpha from 1 to alpha1 gradually
             if i <= nsh:
-                alpha = alpha1 + (1 - alpha1) * (1 - i / nsh)
+                alpha = alpha1 + (1 - alpha1) * (1 - i / (nsh + 1))
             else:
                 alpha = alpha1
             chi_sq = chi2(p).ppf(alpha)
-            h = int(min(np.ceil(n * alpha - 0.5), n - 1))  # alpha <=(h+0.5)/n
+            h = int(min(np.ceil(n * alpha - 0.5), n - 1))  # alpha <= (h+0.5)/n
 
             # XXX: might be buggy when there are identical data points
             # better to use argpartition! but may break ix_sub == ix_old.
             ix_sub = (d_sq <= np.partition(d_sq, h)[h])  # alpha-quantile
             consistency = alpha / chi2(p + 2).cdf(chi_sq)
 
-        # check convergence when maxiter > nsh + 1
-        if (i > nsh) and (ix_sub == ix_old).all():
+        # check convergence
+        if (i > nsh + 1) and (ix_sub == ix_old).all():
             break  # converged
         ix_old = ix_sub
 
+        # warm start?
         if 0 == warm_start or niter < warm_start:
-            gp_kwargs['likelihood'] = likelihood_cold.copy()
-            gp_kwargs['kernel'] = kernel_cold.copy()
+            gp_kwargs['likelihood'] = likelihood_init.copy()
+            gp_kwargs['kernel'] = kernel_init.copy()
 
+        # train GP
         gp = GPy.core.GP(X[ix_sub], Y[ix_sub], **gp_kwargs)
         gp.optimize(**optimize_kwargs)
 
+        # make prediction
         Y_avg, Y_var = gp.predict(X, include_likelihood=True)
         d_sq = ((Y - Y_avg)**2 / Y_var).ravel()
 
@@ -142,7 +143,7 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
             callback(niter, locals(), *callback_args)
         niter += 1
 
-    # reweighting step
+    # reweighting
     for i in range(nrw):
         alpha = alpha2
         chi_sq = chi2(p).ppf(alpha)
@@ -151,18 +152,22 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
         ix_sub = (d_sq <= chi_sq * consistency)
         consistency = alpha / chi2(p + 2).cdf(chi_sq)
 
+        # check convergence
         if (ix_sub == ix_old).all():
             break  # converged
         ix_old = ix_sub
 
+        # warm start?
         if 0 == warm_start or niter < warm_start:
-            gp_kwargs['likelihood'] = likelihood_cold.copy()
-            gp_kwargs['kernel'] = kernel_cold.copy()
+            gp_kwargs['likelihood'] = likelihood_init.copy()
+            gp_kwargs['kernel'] = kernel_init.copy()
 
+        # train GP
         gp = GPy.core.GP(X[ix_sub], Y[ix_sub], **gp_kwargs)
         gp.optimize(**optimize_kwargs)
 
-        if i < nrw - 1 or predict:
+        # make prediction
+        if i < nrw - 1 or return_predict:
             Y_avg, Y_var = gp.predict(X, include_likelihood=True)
             d_sq = ((Y - Y_avg)**2 / Y_var).ravel()
         else:
@@ -172,7 +177,7 @@ def ITGP(X, Y, alpha1=0.50, alpha2=0.975, nsh=2, ncc=2, nrw=1,
             callback(niter, locals(), *callback_args)
         niter += 1
 
-    if predict:
+    if return_predict:
         # outlier detection
         score = (d_sq / consistency)**0.5
         return ITGPResult(gp, consistency, score, Y_avg, Y_var, ix_sub, niter)
