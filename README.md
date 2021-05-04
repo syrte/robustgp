@@ -1,10 +1,11 @@
 # robustgp
 Robust Gaussian Process Regression Based on Iterative Trimming
+Zhao-Zhou Li, Lu Li, Zhengyi Shao, 2020
 https://arxiv.org/abs/2011.11057
 
 First application
 - Modeling Unresolved Binaries of Open Clusters in the Color-Magnitude Diagram. I. Method and Application of NGC 3532
-  https://ui.adsabs.harvard.edu/abs/2020ApJ...901...49L/abstract
+  https://ui.adsabs.harvard.edu/abs/2020ApJ...901...49L/
 
 ## Dependency
 [GPy](https://github.com/SheffieldML/GPy/)
@@ -39,45 +40,21 @@ I will write a `setup.py` in the future for easier installation.
 
 ## Usage
 
-You have two 1d arrays, `X` and `Y`, and want to predict the value of `Y` at arbitrary `X`.
-
 ```python
-import numpy as np
 from robustgp import ITGP
-import GPy
 
-k_sigma2 = 0.1**2
-k_length = 2
-w_sigma2 = 0.001**2
+# train ITGP
+res = ITGP(X, Y, alpha1=0.5, alpha2=0.975, nsh=2, ncc=2, nrw=1)
+gp, consistency = res.gp, res.consistency
 
-kernel_rbf = GPy.kern.RBF(input_dim=1, variance=k_sigma2, lengthscale=k_length)
-kernel_mat32 = GPy.kern.Matern32(input_dim=1, variance=k_sigma2, lengthscale=k_length)
-kernel_white = GPy.kern.White(input_dim=1, variance=w_sigma2)
-kernel = kernel_mat32 + kernel_white
-
-g_lik = GPy.likelihoods.Gaussian(variance=1e-10)
-g_lik.variance.constrain_fixed(1e-10)
-
-gp, consistency, score = ITGP(
-    X.reshape(-1, 1), Y.reshape(-1, 1),
-    alpha1=0.5, alpha2=0.95,
-    niter0=10, niter1=10, niter2=0,
-    kernel=kernel, likelihood=g_lik,
-)
-gp.optimize()
-
-x_new = np.linspace(X.min(), X.max(), 100)
-y_mean, y_var = gp.predict(x_new)
-
-plt.plot(x_new, y_mean)
+# make prediction
+y_avg, y_var = gp.predict(x_new)
+y_var *= consistency
 ```
 
 `gp` is a `GPy.core.GP` object. Please refer the usage of [GPy](https://nbviewer.jupyter.org/github/SheffieldML/notebook/blob/master/GPy/basic_gp.ipynb).
-You can start with, e.g., `gp.plot()`.
 
-You might want to set a more reasonable initial guess for `k_sigma2, k_length, w_sigma2`.
-
-More detailed user guide and notebook example will be added later.
+See [this notebook](https://github.com/syrte/robustgp/blob/master/notebook/Example_Neal_Dataset.ipynb) for a complete example.
 
 ## License 
 The MIT License
