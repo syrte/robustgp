@@ -56,7 +56,6 @@ See the algorithm paper for details.
 
 - First application:
   [Modeling Unresolved Binaries of Open Clusters in the Color-Magnitude Diagram. I. Method and Application of NGC 3532](https://ui.adsabs.harvard.edu/abs/2020ApJ...901...49L/),
-
   Lu Li, Zhengyi Shao, Zhao-Zhou Li, Jincheng Yu, Jing Zhong, & Li Chen, 2020
 
 ## License
