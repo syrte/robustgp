@@ -43,7 +43,9 @@ Here `gp` is a `GPy.core.GP` object, whose usage is further illustrated [here](h
 Comparison with standard Gaussian process and t-likelihood Gaussian process in terms of RMSE.
 See the algorithm paper for details.
 
+![Example sample](https://github.com/syrte/robustgp/blob/master/notebook/figure/neal_mock.png)
 
+![Benchmark](https://github.com/syrte/robustgp/blob/master/notebook/figure/neal_bench.png)
 
 
 ## References
