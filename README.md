@@ -2,6 +2,9 @@
 
 [Robust Gaussian Process Regression Based on Iterative Trimming (ITGP)](https://arxiv.org/abs/2011.11057)
 
+- Nonparametric, flexible, and robust nonlinear regression based on Gaussian process.
+- Outperforming the robust Gaussian process with Student’s-t likelihood significantly in many test cases.
+
 The Gaussian process (GP) regression can be severely biased when the data are contaminated by outliers. ITGP is a new robust GP regression algorithm that iteratively trims the most extreme data points. While the new algorithm retains the attractive properties of the standard GP as a nonparametric and flexible regression method, it can greatly improve the model accuracy for contaminated data even in the presence of extreme or abundant outliers. It is also easier to implement compared with previous robust GP variants that rely on approximate inference. Applied to a wide range of experiments with different contamination levels, the proposed method significantly outperforms the standard GP and the popular robust GP variant with the Student-t likelihood in most test cases.
 
 
